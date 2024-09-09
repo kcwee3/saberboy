@@ -365,8 +365,8 @@
                 const div = document.createElement('div');
                 if (task.completed) {
                     div.innerHTML = `<p>${task.description} - Completed</p>`;
-                } else {
-                    div.innerHTML = `
+                } else
+div.innerHTML = `
                         <p>${task.description} - Reward: ${task.reward} tokens</p>
                         <button onclick="completeTask(${task.id})">Complete</button>
                     `;

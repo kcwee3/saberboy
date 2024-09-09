@@ -47,19 +47,22 @@
             justify-content: center;
             margin-bottom: 20px;
             position: relative;
+            width: 100%;
+            height: 300px;
         }
         .space {
-            width: 50px;
-            height: 50px;
+            width: 18%;
+            height: 28%;
             border: 1px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 2px;
+            margin: 1%;
+            position: relative;
         }
         .saberboy {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: red;
             border-radius: 50%;
             position: absolute;
@@ -142,7 +145,7 @@
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = ((player.totalSteps + i) % BOARD_SIZE) + 1;
+                space.textContent = player.totalSteps + i + 1;
                 boardElement.appendChild(space);
                 board.push(space);
             }
@@ -157,8 +160,8 @@
             const targetSpace = board[player.position % BOARD_SIZE];
             const rect = targetSpace.getBoundingClientRect();
             const boardRect = document.querySelector('.board').getBoundingClientRect();
-            saberboy.style.left = (rect.left - boardRect.left + 5) + 'px';
-            saberboy.style.top = (rect.top - boardRect.top + 5) + 'px';
+            saberboy.style.left = (rect.left - boardRect.left + (rect.width - saberboy.offsetWidth) / 2) + 'px';
+            saberboy.style.top = (rect.top - boardRect.top + (rect.height - saberboy.offsetHeight) / 2) + 'px';
         }
 
         function rollDice() {
@@ -169,17 +172,19 @@
                 player.totalSteps += roll;
                 player.tokens += roll;
                 player.diceAvailable--;
-                updatePosition();
-                updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${(player.totalSteps % BOARD_SIZE) + 1}. Gained ${roll} tokens.`;
-                
-                if (player.totalSteps >= BOARD_SIZE * player.level) {
-                    levelUp();
-                }
                 
                 if (player.position >= BOARD_SIZE) {
                     player.position %= BOARD_SIZE;
                     createBoard();
+                } else {
+                    updatePosition();
+                }
+                
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.totalSteps}. Gained ${roll} tokens.`;
+                
+                if (player.totalSteps >= BOARD_SIZE * player.level) {
+                    levelUp();
                 }
             } else {
                 document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";

@@ -133,7 +133,7 @@
             healthUpgradeCost: 10,
             totalSteps: 0,
             diceCost: 10,
-            diceCostResetTime: Date.now() + 24 * 60 * 60 * 1000
+            diceCostResetTime: getNextSingaporeReset()
         };
 
         const BOARD_SIZE = 10;
@@ -145,6 +145,13 @@
             {id: 3, description: "Follow on Twitter", reward: 40, completed: false, link: "https://twitter.com/youraccount"}
         ];
 
+        function getNextSingaporeReset() {
+            const now = new Date();
+            const singapore = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Singapore"}));
+            singapore.setHours(24, 0, 0, 0);
+            return singapore.getTime();
+        }
+
         function createBoard() {
             const boardElement = document.getElementById('game-board');
             boardElement.innerHTML = '';
@@ -152,7 +159,7 @@
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = player.totalSteps + i + 1;
+                space.textContent = (player.position + i) % BOARD_SIZE + 1;
                 boardElement.appendChild(space);
                 board.push(space);
             }
@@ -183,7 +190,7 @@
                 createBoard();
                 updatePosition();
                 updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.totalSteps}. Gained ${roll} tokens.`;
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
                 
                 if (player.totalSteps >= BOARD_SIZE * player.level) {
                     levelUp();
@@ -196,6 +203,8 @@
 
         function levelUp() {
             player.level++;
+            player.position = 0;
+            player.totalSteps = 0;
             createBoard();
             document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
             saveGame();
@@ -240,7 +249,7 @@
                 healthUpgradeCost: 10,
                 totalSteps: 0,
                 diceCost: 10,
-                diceCostResetTime: Date.now() + 24 * 60 * 60 * 1000
+                diceCostResetTime: getNextSingaporeReset()
             };
             tasks.forEach(task => task.completed = false);
             createBoard();
@@ -277,7 +286,7 @@
             // Update dice cost reset timer
             if (now >= player.diceCostResetTime) {
                 player.diceCost = 10;
-                player.diceCostResetTime = now + 24 * 60 * 60 * 1000;
+                player.diceCostResetTime = getNextSingaporeReset();
                 updatePlayerStats();
                 saveGame();
             }

@@ -75,6 +75,28 @@
             margin: 20px 0;
             clear: both;
         }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
@@ -118,6 +140,16 @@
         <button onclick="showPage('tasks-page')">Tasks</button>
     </div>
 
+    <div class="overlay" id="overlay"></div>
+    <div class="popup" id="attack-popup">
+        <h2>Attack!</h2>
+        <p>You've landed on a space with 7!</p>
+        <p>Attacked player: <span id="attacked-player"></span></p>
+        <p>Player's Health: <span id="attacked-health"></span></p>
+        <p>Player's Tokens: <span id="attacked-tokens"></span></p>
+        <button onclick="rollForDamage()">Roll for Damage</button>
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -144,6 +176,8 @@
             {id: 2, description: "Like Facebook page", reward: 30, completed: false, link: "https://facebook.com/yourpage"},
             {id: 3, description: "Follow on Twitter", reward: 40, completed: false, link: "https://twitter.com/youraccount"}
         ];
+
+        let attackedPlayer = null;
 
         function getNextSingaporeReset() {
             const now = new Date();
@@ -192,13 +226,25 @@
                 updatePlayerStats();
                 document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.totalSteps}. Gained ${roll} tokens.`;
                 
-                if (player.totalSteps >= BOARD_SIZE * player.level) {
+                if (player.totalSteps % 7 === 0) {
+                    initiateAttack();
+                } else if (player.totalSteps >= BOARD_SIZE * player.level) {
                     levelUp();
                 }
                 saveGame();
             } else {
                 document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";
             }
+        }
+
+        function initiateAttack() {
+            // In a real implementation, this would fetch a random player from your server
+            tg.sendData(JSON.stringify({action: "getRandomPlayer"}));
+        }
+
+        function rollForDamage() {
+            const damageRoll = Math.floor(Math.random() * 6) + 1;
+            tg.sendData(JSON.stringify({action: "attackPlayer", targetId: attackedPlayer.id, damage: damageRoll}));
         }
 
         function levelUp() {
@@ -306,20 +352,7 @@
         }
 
         function updateLeaderboard() {
-            // In a real implementation, this would fetch data from your server
-            // For now, we'll use dummy data
-            const dummyLeaderboard = [
-                {name: "Player 1", level: 5, tokens: 5000},
-                {name: "Player 2", level: 4, tokens: 4000},
-                {name: "Player 3", level: 3, tokens: 3000}
-            ];
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = '';
-            dummyLeaderboard.forEach(entry => {
-                const li = document.createElement('li');
-                li.textContent = `${entry.name} - Level: ${entry.level}, Tokens: ${entry.tokens}`;
-                list.appendChild(li);
-            });
+            tg.sendData(JSON.stringify({action: "getLeaderboard"}));
         }
 
         function updateTasks() {

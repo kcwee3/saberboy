@@ -41,16 +41,50 @@
         .nav-buttons button {
             width: 23%;
         }
+        .board {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .space {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+        }
+        .saberboy {
+            width: 40px;
+            height: 40px;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s ease;
+        }
+        #dice-image {
+            font-size: 48px;
+            text-align: center;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div id="home-page" class="page active">
         <h1>Saberboy Adventure</h1>
         <p>Level: <span id="player-level">1</span></p>
-        <p>Health: <span id="player-health">10</span>/10</p>
+        <p>Health: <span id="player-health">10</span>/<span id="player-max-health">10</span></p>
         <p>Tokens: <span id="player-tokens">10</span></p>
+        <p>Dice Available: <span id="dice-available">3</span></p>
+        <p>Next Dice in: <span id="next-dice-time">30:00</span></p>
+        <div class="board" id="game-board"></div>
+        <div id="dice-image">🎲</div>
         <button onclick="rollDice()">Roll Dice</button>
-        <button onclick="heal()">Heal (5 tokens)</button>
+        <button onclick="buyDice()">Buy 10 Dice (10 tokens)</button>
+        <button onclick="upgradeHealth()">Upgrade Health (<span id="health-upgrade-cost">10</span> tokens)</button>
         <p id="game-status"></p>
     </div>
 
@@ -70,19 +104,11 @@
         <div id="tasks-list"></div>
     </div>
 
-    <div id="token-info-page" class="page">
-        <h1>Saberboy Token</h1>
-        <p>Total Supply: 10,000,000,000 SABER</p>
-        <p>Contract Address: <span id="contract-address">0x...</span></p>
-        <p>Admin Wallet: <span id="admin-wallet">0x...</span></p>
-    </div>
-
     <div class="nav-buttons">
         <button onclick="showPage('home-page')">Home</button>
         <button onclick="showPage('referral-page')">Referral</button>
         <button onclick="showPage('leaderboard-page')">Leaderboard</button>
         <button onclick="showPage('tasks-page')">Tasks</button>
-        <button onclick="showPage('token-info-page')">Token Info</button>
     </div>
 
     <script>
@@ -92,21 +118,120 @@
         let player = {
             level: 1,
             health: 10,
+            maxHealth: 10,
             tokens: 10,
-            position: 0
+            position: 0,
+            diceAvailable: 3,
+            nextDiceTime: Date.now() + 30 * 60 * 1000,
+            healthUpgradeCost: 10
         };
 
-        const leaderboard = [
-            {name: "Player 1", level: 5, tokens: 5000},
-            {name: "Player 2", level: 4, tokens: 4000},
-            {name: "Player 3", level: 3, tokens: 3000}
-        ];
+        let boardSize = 10;
+        let board = [];
 
         const tasks = [
-            {id: 1, description: "Join Telegram channel", reward: 50},
-            {id: 2, description: "Like Facebook page", reward: 30},
-            {id: 3, description: "Follow on Twitter", reward: 40}
+            {id: 1, description: "Join Telegram channel", reward: 50, completed: false, link: "https://t.me/yourchannel"},
+            {id: 2, description: "Like Facebook page", reward: 30, completed: false, link: "https://facebook.com/yourpage"},
+            {id: 3, description: "Follow on Twitter", reward: 40, completed: false, link: "https://twitter.com/youraccount"}
         ];
+
+        function createBoard() {
+            const boardElement = document.getElementById('game-board');
+            boardElement.innerHTML = '';
+            for (let i = 0; i < boardSize; i++) {
+                const space = document.createElement('div');
+                space.className = 'space';
+                space.textContent = i + 1;
+                boardElement.appendChild(space);
+                board.push(space);
+            }
+            const saberboy = document.createElement('div');
+            saberboy.className = 'saberboy';
+            boardElement.appendChild(saberboy);
+            updatePosition();
+        }
+
+        function updatePosition() {
+            const saberboy = document.querySelector('.saberboy');
+            const targetSpace = board[player.position];
+            const rect = targetSpace.getBoundingClientRect();
+            const boardRect = document.querySelector('.board').getBoundingClientRect();
+            saberboy.style.left = (rect.left - boardRect.left + 5) + 'px';
+            saberboy.style.top = (rect.top - boardRect.top + 5) + 'px';
+        }
+
+        function rollDice() {
+            if (player.diceAvailable > 0) {
+                const roll = Math.floor(Math.random() * 6) + 1;
+                document.getElementById('dice-image').textContent = `🎲 ${roll}`;
+                player.position = (player.position + roll) % boardSize;
+                player.tokens += roll;
+                player.diceAvailable--;
+                updatePosition();
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+                
+                if (player.position === 9) {  // Reached the end of the path
+                    levelUp();
+                }
+            } else {
+                document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";
+            }
+        }
+
+        function levelUp() {
+            player.level++;
+            boardSize *= 2;
+            player.position = 0;
+            createBoard();
+            document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
+        }
+
+        function buyDice() {
+            if (player.tokens >= 10) {
+                player.tokens -= 10;
+                player.diceAvailable = Math.min(player.diceAvailable + 10, 10);
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = "Bought 10 dice!";
+            } else {
+                document.getElementById('game-status').textContent = "Not enough tokens to buy dice.";
+            }
+        }
+
+        function upgradeHealth() {
+            if (player.tokens >= player.healthUpgradeCost) {
+                player.tokens -= player.healthUpgradeCost;
+                player.maxHealth *= 2;
+                player.health = player.maxHealth;
+                player.healthUpgradeCost *= 2;
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = "Health upgraded!";
+            } else {
+                document.getElementById('game-status').textContent = "Not enough tokens to upgrade health.";
+            }
+        }
+
+        function updatePlayerStats() {
+            document.getElementById('player-level').textContent = player.level;
+            document.getElementById('player-health').textContent = player.health;
+            document.getElementById('player-max-health').textContent = player.maxHealth;
+            document.getElementById('player-tokens').textContent = player.tokens;
+            document.getElementById('dice-available').textContent = player.diceAvailable;
+            document.getElementById('health-upgrade-cost').textContent = player.healthUpgradeCost;
+        }
+
+        function updateDiceTimer() {
+            const now = Date.now();
+            if (now >= player.nextDiceTime) {
+                player.diceAvailable = Math.min(player.diceAvailable + 3, 10);
+                player.nextDiceTime = now + 30 * 60 * 1000;
+                updatePlayerStats();
+            }
+            const timeLeft = Math.max(0, player.nextDiceTime - now);
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            document.getElementById('next-dice-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
@@ -115,35 +240,17 @@
             if (pageId === 'tasks-page') updateTasks();
         }
 
-        function rollDice() {
-            const roll = Math.floor(Math.random() * 6) + 1;
-            player.position = (player.position + roll) % 10;
-            player.tokens += roll;
-            updatePlayerStats();
-            document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
-        }
-
-        function heal() {
-            if (player.tokens >= 5 && player.health < 10) {
-                player.tokens -= 5;
-                player.health = 10;
-                updatePlayerStats();
-                document.getElementById('game-status').textContent = "Fully healed!";
-            } else {
-                document.getElementById('game-status').textContent = "Cannot heal. Not enough tokens or already at full health.";
-            }
-        }
-
-        function updatePlayerStats() {
-            document.getElementById('player-level').textContent = player.level;
-            document.getElementById('player-health').textContent = player.health;
-            document.getElementById('player-tokens').textContent = player.tokens;
-        }
-
         function updateLeaderboard() {
+            // In a real implementation, this would fetch data from your server
+            // For now, we'll use dummy data
+            const dummyLeaderboard = [
+                {name: "Player 1", level: 5, tokens: 5000},
+                {name: "Player 2", level: 4, tokens: 4000},
+                {name: "Player 3", level: 3, tokens: 3000}
+            ];
             const list = document.getElementById('leaderboard-list');
             list.innerHTML = '';
-            leaderboard.forEach(entry => {
+            dummyLeaderboard.forEach(entry => {
                 const li = document.createElement('li');
                 li.textContent = `${entry.name} - Level: ${entry.level}, Tokens: ${entry.tokens}`;
                 list.appendChild(li);
@@ -155,32 +262,42 @@
             list.innerHTML = '';
             tasks.forEach(task => {
                 const div = document.createElement('div');
-                div.innerHTML = `
-                    <p>${task.description} - Reward: ${task.reward} tokens</p>
-                    <button onclick="completeTask(${task.id})">Complete</button>
-                `;
+                if (task.completed) {
+                    div.innerHTML = `<p>${task.description} - Completed</p>`;
+                } else {
+                    div.innerHTML = `
+                        <p>${task.description} - Reward: ${task.reward} tokens</p>
+                        <button onclick="completeTask(${task.id})">Complete</button>
+                    `;
+                }
                 list.appendChild(div);
             });
         }
 
         function completeTask(taskId) {
             const task = tasks.find(t => t.id === taskId);
-            if (task) {
+            if (task && !task.completed) {
+                window.open(task.link, '_blank');
+                // In a real implementation, you would verify task completion here
+                task.completed = true;
                 player.tokens += task.reward;
                 updatePlayerStats();
+                updateTasks();
                 document.getElementById('game-status').textContent = `Completed task. Gained ${task.reward} tokens.`;
             }
         }
 
         function updateReferralInfo() {
-            const botUsername = 'saberboybot'; // Replace with your actual bot username
+            const botUsername = 'YourBotUsername'; // Replace with your actual bot username
             const referralCode = document.getElementById('referral-code').textContent;
             document.getElementById('referral-link').textContent = `https://t.me/${botUsername}?start=${referralCode}`;
         }
 
         // Initialize
+        createBoard();
         updatePlayerStats();
         updateReferralInfo();
+        setInterval(updateDiceTimer, 1000);
     </script>
 </body>
 </html>

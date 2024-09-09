@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saberboy Adventure</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .page {
+            display: none;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .active {
+            display: block;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .nav-buttons button {
+            width: 23%;
+        }
+    </style>
+</head>
+<body>
+    <div id="home-page" class="page active">
+        <h1>Saberboy Adventure</h1>
+        <p>Level: <span id="player-level">1</span></p>
+        <p>Health: <span id="player-health">10</span>/10</p>
+        <p>Tokens: <span id="player-tokens">10</span></p>
+        <button onclick="rollDice()">Roll Dice</button>
+        <button onclick="heal()">Heal (5 tokens)</button>
+        <p id="game-status"></p>
+    </div>
+
+    <div id="referral-page" class="page">
+        <h1>Invite Friends</h1>
+        <p>Your Referral Code: <span id="referral-code">CODE123</span></p>
+        <p>Share this link: <span id="referral-link"></span></p>
+    </div>
+
+    <div id="leaderboard-page" class="page">
+        <h1>Leaderboard</h1>
+        <ol id="leaderboard-list"></ol>
+    </div>
+
+    <div id="tasks-page" class="page">
+        <h1>Tasks</h1>
+        <div id="tasks-list"></div>
+    </div>
+
+    <div id="token-info-page" class="page">
+        <h1>Saberboy Token</h1>
+        <p>Total Supply: 10,000,000,000 SABER</p>
+        <p>Contract Address: <span id="contract-address">0x...</span></p>
+        <p>Admin Wallet: <span id="admin-wallet">0x...</span></p>
+    </div>
+
+    <div class="nav-buttons">
+        <button onclick="showPage('home-page')">Home</button>
+        <button onclick="showPage('referral-page')">Referral</button>
+        <button onclick="showPage('leaderboard-page')">Leaderboard</button>
+        <button onclick="showPage('tasks-page')">Tasks</button>
+        <button onclick="showPage('token-info-page')">Token Info</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let player = {
+            level: 1,
+            health: 10,
+            tokens: 10,
+            position: 0
+        };
+
+        const leaderboard = [
+            {name: "Player 1", level: 5, tokens: 5000},
+            {name: "Player 2", level: 4, tokens: 4000},
+            {name: "Player 3", level: 3, tokens: 3000}
+        ];
+
+        const tasks = [
+            {id: 1, description: "Join Telegram channel", reward: 50},
+            {id: 2, description: "Like Facebook page", reward: 30},
+            {id: 3, description: "Follow on Twitter", reward: 40}
+        ];
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'leaderboard-page') updateLeaderboard();
+            if (pageId === 'tasks-page') updateTasks();
+        }
+
+        function rollDice() {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            player.position = (player.position + roll) % 10;
+            player.tokens += roll;
+            updatePlayerStats();
+            document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+        }
+
+        function heal() {
+            if (player.tokens >= 5 && player.health < 10) {
+                player.tokens -= 5;
+                player.health = 10;
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = "Fully healed!";
+            } else {
+                document.getElementById('game-status').textContent = "Cannot heal. Not enough tokens or already at full health.";
+            }
+        }
+
+        function updatePlayerStats() {
+            document.getElementById('player-level').textContent = player.level;
+            document.getElementById('player-health').textContent = player.health;
+            document.getElementById('player-tokens').textContent = player.tokens;
+        }
+
+        function updateLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            leaderboard.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.name} - Level: ${entry.level}, Tokens: ${entry.tokens}`;
+                list.appendChild(li);
+            });
+        }
+
+        function updateTasks() {
+            const list = document.getElementById('tasks-list');
+            list.innerHTML = '';
+            tasks.forEach(task => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p>${task.description} - Reward: ${task.reward} tokens</p>
+                    <button onclick="completeTask(${task.id})">Complete</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function completeTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                player.tokens += task.reward;
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = `Completed task. Gained ${task.reward} tokens.`;
+            }
+        }
+
+        function updateReferralInfo() {
+            const botUsername = 'YourBotUsername'; // Replace with your actual bot username
+            const referralCode = document.getElementById('referral-code').textContent;
+            document.getElementById('referral-link').textContent = `https://t.me/${botUsername}?start=${referralCode}`;
+        }
+
+        // Initialize
+        updatePlayerStats();
+        updateReferralInfo();
+    </script>
+</body>
+</html>

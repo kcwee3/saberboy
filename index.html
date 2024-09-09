@@ -48,18 +48,18 @@
             margin-bottom: 20px;
             position: relative;
             width: 100%;
-            height: 300px; /* Increased height */
+            height: 200px;
         }
         .space {
             width: 18%;
-            height: 18%; /* Adjusted for 5x5 grid */
+            height: 28%;
             border: 1px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 1%;
             position: relative;
-            font-size: 14px; /* Reduced font size */
+            font-size: 14px;
         }
         .saberboy {
             width: 25px;
@@ -73,7 +73,7 @@
             font-size: 48px;
             text-align: center;
             margin: 20px 0;
-            clear: both; /* Ensures it's below the board */
+            clear: both;
         }
     </style>
 </head>
@@ -91,6 +91,7 @@
         <button onclick="rollDice()">Roll Dice</button>
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (<span id="health-upgrade-cost">10</span> tokens)</button>
+        <button onclick="resetGame()">Reset Game</button>
         <p id="game-status"></p>
     </div>
 
@@ -135,10 +136,10 @@
             diceCostResetTime: Date.now() + 24 * 60 * 60 * 1000
         };
 
-        const BOARD_SIZE = 25; // Changed to 25 for a 5x5 grid
+        const BOARD_SIZE = 10;
         let board = [];
 
-        const tasks = [
+        let tasks = [
             {id: 1, description: "Join Telegram channel", reward: 50, completed: false, link: "https://t.me/yourchannel"},
             {id: 2, description: "Like Facebook page", reward: 30, completed: false, link: "https://facebook.com/yourpage"},
             {id: 3, description: "Follow on Twitter", reward: 40, completed: false, link: "https://twitter.com/youraccount"}
@@ -225,6 +226,27 @@
             } else {
                 document.getElementById('game-status').textContent = "Not enough tokens to upgrade health.";
             }
+        }
+
+        function resetGame() {
+            player = {
+                level: 1,
+                health: 10,
+                maxHealth: 10,
+                tokens: 10,
+                position: 0,
+                diceAvailable: 3,
+                nextDiceTime: Date.now() + 30 * 60 * 1000,
+                healthUpgradeCost: 10,
+                totalSteps: 0,
+                diceCost: 10,
+                diceCostResetTime: Date.now() + 24 * 60 * 60 * 1000
+            };
+            tasks.forEach(task => task.completed = false);
+            createBoard();
+            updatePlayerStats();
+            document.getElementById('game-status').textContent = "Game reset!";
+            saveGame();
         }
 
         function updatePlayerStats() {
@@ -323,21 +345,26 @@
         }
 
         function updateReferralInfo() {
-            const botUsername = 'saberboybot'; // Updated bot username
+            const botUsername = 'saberboybot';
             const referralCode = document.getElementById('referral-code').textContent;
             document.getElementById('referral-link').textContent = `https://t.me/${botUsername}?start=${referralCode}`;
         }
 
         function saveGame() {
             localStorage.setItem('saberboyGame', JSON.stringify(player));
+            localStorage.setItem('saberboyTasks', JSON.stringify(tasks));
         }
 
         function loadGame() {
             const savedGame = localStorage.getItem('saberboyGame');
+            const savedTasks = localStorage.getItem('saberboyTasks');
             if (savedGame) {
                 player = JSON.parse(savedGame);
                 updatePlayerStats();
                 createBoard();
+            }
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
             }
         }
 

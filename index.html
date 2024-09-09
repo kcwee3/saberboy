@@ -155,6 +155,8 @@
         tg.expand();
 
         let player = {
+            id: tg.initDataUnsafe.user.id,
+            name: tg.initDataUnsafe.user.first_name,
             level: 1,
             health: 10,
             maxHealth: 10,
@@ -238,7 +240,6 @@
         }
 
         function initiateAttack() {
-            // In a real implementation, this would fetch a random player from your server
             tg.sendData(JSON.stringify({action: "getRandomPlayer"}));
         }
 
@@ -285,6 +286,8 @@
 
         function resetGame() {
             player = {
+                id: tg.initDataUnsafe.user.id,
+                name: tg.initDataUnsafe.user.first_name,
                 level: 1,
                 health: 10,
                 maxHealth: 10,
@@ -393,39 +396,62 @@
         }
 
         function saveGame() {
-            localStorage.setItem('saberboyGame', JSON.stringify(player));
-            localStorage.setItem('saberboyTasks', JSON.stringify(tasks));
+            tg.sendData(JSON.stringify({action: "saveGame", player: player, tasks: tasks}));
         }
 
         function loadGame() {
-            const savedGame = localStorage.getItem('saberboyGame');
-            const savedTasks = localStorage.getItem('saberboyTasks');
-            if (savedGame) {
-                player = JSON.parse(savedGame);
-                updatePlayerStats();
-                createBoard();
-            }
-            if (savedTasks) {
-                tasks = JSON.parse(savedTasks);
-            }
+            tg.sendData(JSON.stringify({action: "loadGame"}));
         }
 
-        // Placeholder function for Telegram data integration
-        function syncWithTelegram() {
-            // In a real implementation, this function would sync data with Telegram
-            console.log("Syncing data with Telegram...");
-            // Fetch player data from Telegram
-            // Update local player object
-            // Send updated data back to Telegram
-        }
+        // Handle messages from the Telegram bot
+        tg.onEvent('message', function(event) {
+            const data = JSON.parse(event.data);
+            switch (data.action) {
+                case "gameLoaded":
+                    player = data.player;
+                    tasks = data.tasks;
+                    updatePlayerStats();
+                    createBoard();
+                    updateTasks();
+                    break;
+                case "randomPlayerFound":
+                    attackedPlayer = data.targetPlayer;
+                    document.getElementById('attacked-player').textContent = attackedPlayer.name;
+                    document.getElementById('attacked-health').textContent = attackedPlayer.health;
+                    document.getElementById('attacked-tokens').textContent = attackedPlayer.tokens;
+                    document.getElementById('overlay').style.display = 'block';
+                    document.getElementById('attack-popup').style.display = 'block';
+                    break;
+                case "attackResult":
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('attack-popup').style.display = 'none';
+                    if (data.success) {
+                        player.tokens += data.stolenTokens;
+                        document.getElementById('game-status').textContent = `Successfully attacked ${attackedPlayer.name} and stole ${data.stolenTokens} tokens!`;
+                    } else {
+                        document.getElementById('game-status').textContent = `Attack on ${attackedPlayer.name} failed.`;
+                    }
+                    updatePlayerStats();
+                    break;
+                case "leaderboardUpdated":
+                    const leaderboardList = document.getElementById('leaderboard-list');
+                    leaderboardList.innerHTML = '';
+                    data.leaderboard.forEach((entry, index) => {
+                        const li = document.createElement('li');
+                        li.textContent = `${index + 1}. ${entry.name} - Level: ${entry.level}, Tokens: ${entry.tokens}`;
+                        if (entry.id === player.id) {
+                            li.style.fontWeight = 'bold';
+                        }
+                        leaderboardList.appendChild(li);
+                    });
+                    break;
+            }
+        });
 
         // Initialize
         loadGame();
-        createBoard();
-        updatePlayerStats();
         updateReferralInfo();
         setInterval(updateTimers, 1000);
-        setInterval(syncWithTelegram, 60000); // Sync every minute (adjust as needed)
     </script>
 </body>
 </html>

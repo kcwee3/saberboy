@@ -159,7 +159,7 @@
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = (player.position + i) % BOARD_SIZE + 1;
+                space.textContent = player.totalSteps + i + 1;
                 boardElement.appendChild(space);
                 board.push(space);
             }
@@ -190,7 +190,7 @@
                 createBoard();
                 updatePosition();
                 updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.totalSteps}. Gained ${roll} tokens.`;
                 
                 if (player.totalSteps >= BOARD_SIZE * player.level) {
                     levelUp();
@@ -203,8 +203,8 @@
 
         function levelUp() {
             player.level++;
-            player.position = 0;
             player.totalSteps = 0;
+            player.position = 0;
             createBoard();
             document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
             saveGame();

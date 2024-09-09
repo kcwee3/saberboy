@@ -123,10 +123,11 @@
             position: 0,
             diceAvailable: 3,
             nextDiceTime: Date.now() + 30 * 60 * 1000,
-            healthUpgradeCost: 10
+            healthUpgradeCost: 10,
+            totalSteps: 0
         };
 
-        let boardSize = 10;
+        const BOARD_SIZE = 10;
         let board = [];
 
         const tasks = [
@@ -138,10 +139,10 @@
         function createBoard() {
             const boardElement = document.getElementById('game-board');
             boardElement.innerHTML = '';
-            for (let i = 0; i < boardSize; i++) {
+            for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = i + 1;
+                space.textContent = ((player.totalSteps + i) % BOARD_SIZE) + 1;
                 boardElement.appendChild(space);
                 board.push(space);
             }
@@ -153,7 +154,7 @@
 
         function updatePosition() {
             const saberboy = document.querySelector('.saberboy');
-            const targetSpace = board[player.position];
+            const targetSpace = board[player.position % BOARD_SIZE];
             const rect = targetSpace.getBoundingClientRect();
             const boardRect = document.querySelector('.board').getBoundingClientRect();
             saberboy.style.left = (rect.left - boardRect.left + 5) + 'px';
@@ -164,15 +165,21 @@
             if (player.diceAvailable > 0) {
                 const roll = Math.floor(Math.random() * 6) + 1;
                 document.getElementById('dice-image').textContent = `🎲 ${roll}`;
-                player.position = (player.position + roll) % boardSize;
+                player.position += roll;
+                player.totalSteps += roll;
                 player.tokens += roll;
                 player.diceAvailable--;
                 updatePosition();
                 updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${(player.totalSteps % BOARD_SIZE) + 1}. Gained ${roll} tokens.`;
                 
-                if (player.position === 9) {  // Reached the end of the path
+                if (player.totalSteps >= BOARD_SIZE * player.level) {
                     levelUp();
+                }
+                
+                if (player.position >= BOARD_SIZE) {
+                    player.position %= BOARD_SIZE;
+                    createBoard();
                 }
             } else {
                 document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";
@@ -181,8 +188,6 @@
 
         function levelUp() {
             player.level++;
-            boardSize *= 2;
-            player.position = 0;
             createBoard();
             document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
         }
@@ -190,7 +195,7 @@
         function buyDice() {
             if (player.tokens >= 10) {
                 player.tokens -= 10;
-                player.diceAvailable = Math.min(player.diceAvailable + 10, 10);
+                player.diceAvailable += 10;
                 updatePlayerStats();
                 document.getElementById('game-status').textContent = "Bought 10 dice!";
             } else {
@@ -223,7 +228,7 @@
         function updateDiceTimer() {
             const now = Date.now();
             if (now >= player.nextDiceTime) {
-                player.diceAvailable = Math.min(player.diceAvailable + 3, 10);
+                player.diceAvailable += 3;
                 player.nextDiceTime = now + 30 * 60 * 1000;
                 updatePlayerStats();
             }
@@ -293,11 +298,21 @@
             document.getElementById('referral-link').textContent = `https://t.me/${botUsername}?start=${referralCode}`;
         }
 
+        // Placeholder function for Telegram data integration
+        function syncWithTelegram() {
+            // In a real implementation, this function would sync data with Telegram
+            console.log("Syncing data with Telegram...");
+            // Fetch player data from Telegram
+            // Update local player object
+            // Send updated data back to Telegram
+        }
+
         // Initialize
         createBoard();
         updatePlayerStats();
         updateReferralInfo();
         setInterval(updateDiceTimer, 1000);
+        setInterval(syncWithTelegram, 60000); // Sync every minute (adjust as needed)
     </script>
 </body>
 </html>

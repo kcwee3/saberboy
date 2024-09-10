@@ -6,25 +6,120 @@
     <title>Saberboy Adventure</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Previous styles remain the same */
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+        body {
+            font-family: 'Bangers', cursive;
+            background-color: #FFD700;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFF;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        h1, h2, h3 {
+            color: #FF6347;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .board {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+            background-color: #87CEEB;
+            border-radius: 15px;
+            padding: 10px;
+        }
+        .space {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #FFF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #90EE90;
+            position: relative;
+        }
+        .player {
+            width: 30px;
+            height: 30px;
+            background-color: #FF6347;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        button {
+            background-color: #FF6347;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Bangers', cursive;
+            text-transform: uppercase;
+            box-shadow: 0 5px 0 #B22222;
+        }
+        button:active {
+            box-shadow: 0 2px 0 #B22222;
+            transform: translateY(3px);
+        }
         .task {
-            background-color: #f0f0f0;
+            background-color: #F0E68C;
             padding: 10px;
             margin: 10px 0;
-            border-radius: 5px;
+            border-radius: 10px;
+        }
+        #dice-image {
+            font-size: 60px;
+            text-align: center;
+            margin: 20px 0;
+            animation: shake 0.5s ease-in-out infinite;
+            display: inline-block;
+        }
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .referral-info {
+            background-color: #F0E68C;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .copy-button {
+            background-color: #4CAF50;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <h1>Saberboy Adventure</h1>
-        <p>Level: <span id="level">1</span></p>
-        <p>Health: <span id="health">10</span>/<span id="max-health">10</span></p>
-        <p>Position: <span id="position">1</span></p>
-        <p>Tokens: <span id="tokens">0</span></p>
-        <p>Dice Available: <span id="dice-available">3</span></p>
-        <p>Next Dice in: <span id="next-dice-time">30:00</span></p>
+        <p>Level: <span id="level">1</span> | Health: <span id="health">10</span>/<span id="max-health">10</span></p>
+        <p>Position: <span id="position">1</span> | Tokens: <span id="tokens">0</span></p>
+        <p>Dice Available: <span id="dice-available">3</span> | Next Dice in: <span id="next-dice-time">30:00</span></p>
         <div class="board" id="board"></div>
+        <div id="dice-image">🎲</div>
         <button onclick="rollDice()">Roll Dice</button>
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (10 tokens)</button>
@@ -45,8 +140,6 @@
             <!-- Tasks will be added here dynamically -->
         </div>
     </div>
-
-    <!-- Previous popups remain the same -->
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -74,7 +167,51 @@
             {id: 3, description: "Follow on Twitter", reward: 40, completed: false, link: "https://twitter.com/youraccount"}
         ];
 
-        // Previous functions remain the same
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const space = document.createElement('div');
+                space.className = 'space';
+                space.textContent = i + 1;
+                board.appendChild(space);
+            }
+            updatePlayerPosition();
+        }
+
+        function updatePlayerPosition() {
+            const spaces = document.querySelectorAll('.space');
+            spaces.forEach(space => {
+                space.innerHTML = space.textContent;
+                if (parseInt(space.textContent) === player.position + 1) {
+                    const playerToken = document.createElement('div');
+                    playerToken.className = 'player';
+                    space.appendChild(playerToken);
+                }
+            });
+        }
+
+        function rollDice() {
+            if (player.diceAvailable > 0) {
+                const roll = Math.floor(Math.random() * 6) + 1;
+                document.getElementById('dice-image').textContent = `🎲 ${roll}`;
+                player.position = (player.position + roll) % BOARD_SIZE;
+                player.tokens += roll;
+                player.diceAvailable--;
+
+                updatePlayerPosition();
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1} and gained ${roll} tokens.`;
+
+                if ((player.position + 1) % 7 === 0) {
+                    initiateAttack();
+                }
+
+                saveGame();
+            } else {
+                document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";
+            }
+        }
 
         function buyDice() {
             if (player.tokens >= player.diceCost) {
@@ -89,6 +226,24 @@
             }
         }
 
+        function upgradeHealth() {
+            if (player.tokens >= 10) {
+                player.tokens -= 10;
+                player.maxHealth *= 2;
+                player.health = player.maxHealth;
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = "Health upgraded!";
+                saveGame();
+            } else {
+                document.getElementById('game-status').textContent = "Not enough tokens to upgrade health.";
+            }
+        }
+
+        function initiateAttack() {
+            // Placeholder for attack functionality
+            document.getElementById('game-status').textContent = "You landed on an attack space!";
+        }
+
         function updatePlayerStats() {
             document.getElementById('level').textContent = player.level;
             document.getElementById('health').textContent = player.health;
@@ -100,6 +255,14 @@
             document.getElementById('referral-count').textContent = player.referralCount;
         }
 
+        function updateTimers() {
+            const now = Date.now();
+            const timeLeft = Math.max(0, player.nextDiceTime - now);
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            document.getElementById('next-dice-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
         function updateReferralInfo() {
             document.getElementById('bot-name').textContent = BOT_NAME;
             if (!player.referralCode) {
@@ -109,6 +272,19 @@
             document.getElementById('referral-code').textContent = player.referralCode;
             document.getElementById('referral-link').textContent = `https://t.me/${BOT_NAME}?start=${player.referralCode}`;
             document.getElementById('referral-count').textContent = player.referralCount;
+        }
+
+        function generateReferralCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function copyReferralLink() {
+            const referralLink = document.getElementById('referral-link').textContent;
+            navigator.clipboard.writeText(referralLink).then(() => {
+                alert('Referral link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
         }
 
         function updateTasks() {
@@ -133,7 +309,6 @@
             const task = tasks.find(t => t.id === taskId);
             if (task && !task.completed) {
                 window.open(task.link, '_blank');
-                // In a real implementation, you would verify task completion here
                 task.completed = true;
                 player.tokens += task.reward;
                 updatePlayerStats();
@@ -158,24 +333,19 @@
             const savedTasks = localStorage.getItem('saberboyTasks');
             if (savedState) {
                 player = JSON.parse(savedState);
-                createBoard();
                 updatePlayerStats();
-                updateReferralInfo();
-            } else {
-                player.referralCode = generateReferralCode();
-                updateReferralInfo();
+                updatePlayerPosition();
             }
             if (savedTasks) {
                 tasks = JSON.parse(savedTasks);
             }
+            updateReferralInfo();
             updateTasks();
         }
 
         // Initialize the game
-        loadGame();
         createBoard();
-        updatePlayerStats();
-        updateTasks();
+        loadGame();
 
         // Start timer update interval
         setInterval(updateTimers, 1000);
@@ -190,8 +360,8 @@
                 // Uncomment the following lines if you want to use server-side game state
                 // player = data.gameState.player;
                 // tasks = data.gameState.tasks;
-                // createBoard();
                 // updatePlayerStats();
+                // updatePlayerPosition();
                 // updateReferralInfo();
                 // updateTasks();
             }

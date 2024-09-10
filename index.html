@@ -231,7 +231,7 @@
             const spaces = document.querySelectorAll('.space');
             spaces.forEach(space => {
                 space.innerHTML = space.textContent;
-                if (parseInt(space.textContent) === player.position + 1) {
+                if (parseInt(space.textContent) === (player.position % BOARD_SIZE) + 1) {
                     const playerToken = document.createElement('div');
                     playerToken.className = 'player';
                     space.appendChild(playerToken);
@@ -243,22 +243,45 @@
             if (player.diceAvailable > 0) {
                 const roll = Math.floor(Math.random() * 6) + 1;
                 document.getElementById('dice-image').textContent = `🎲 ${roll}`;
-                player.position = (player.position + roll) % BOARD_SIZE;
+                player.position += roll;
                 player.tokens += roll;
                 player.diceAvailable--;
 
                 updatePlayerPosition();
                 updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1} and gained ${roll} tokens.`;
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position}. Gained ${roll} tokens.`;
 
-                if ((player.position + 1) % 7 === 0) {
+                if (player.position % 7 === 0) {
                     initiateAttack();
+                }
+
+                if (player.position >= BOARD_SIZE * player.level) {
+                    levelUp();
                 }
 
                 saveGame();
             } else {
                 document.getElementById('game-status').textContent = "No dice available. Wait for the next dice or buy more.";
             }
+        }
+
+        function levelUp() {
+            player.level++;
+            player.position = 0;
+            createBoard();
+            document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
+        }
+
+        function initiateAttack() {
+            const damage = Math.floor(Math.random() * 5) + 1;
+            player.health = Math.max(0, player.health - damage);
+            if (player.health === 0) {
+                resetGame();
+                document.getElementById('game-status').textContent = `You were attacked and lost all your health. Game over!`;
+            } else {
+                document.getElementById('game-status').textContent += ` You were attacked and lost ${damage} health!`;
+            }
+            updatePlayerStats();
         }
 
         function buyDice() {
@@ -287,16 +310,11 @@
             }
         }
 
-        function initiateAttack() {
-            // Placeholder for attack functionality
-            document.getElementById('game-status').textContent = "You landed on an attack space!";
-        }
-
         function updatePlayerStats() {
             document.getElementById('level').textContent = player.level;
             document.getElementById('health').textContent = player.health;
             document.getElementById('max-health').textContent = player.maxHealth;
-            document.getElementById('position').textContent = player.position + 1;
+            document.getElementById('position').textContent = player.position;
             document.getElementById('tokens').textContent = player.tokens;
             document.getElementById('dice-available').textContent = player.diceAvailable;
             document.getElementById('dice-cost').textContent = player.diceCost;

@@ -26,14 +26,23 @@
         h1, h2, h3 {
             color: #FF6347;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
         }
-        .stats-bubble {
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .stat-bubble {
             background-color: #87CEEB;
             border-radius: 15px;
             padding: 10px;
-            margin-bottom: 20px;
+            margin: 5px;
             text-align: center;
             box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            flex: 1 1 calc(33.333% - 10px);
+            min-width: 100px;
         }
         .board {
             display: flex;
@@ -69,6 +78,21 @@
             transform: translate(-50%, -50%);
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        #dice-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        #dice-image {
+            font-size: 60px;
+            display: inline-block;
+            animation: shake 0.5s ease-in-out infinite;
+        }
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
         button {
             background-color: #FF6347;
             color: white;
@@ -82,6 +106,8 @@
             font-family: 'Bangers', cursive;
             text-transform: uppercase;
             box-shadow: 0 5px 0 #B22222;
+            display: block;
+            width: 100%;
         }
         button:active {
             box-shadow: 0 2px 0 #B22222;
@@ -92,19 +118,6 @@
             padding: 10px;
             margin: 10px 0;
             border-radius: 10px;
-        }
-        #dice-image {
-            font-size: 60px;
-            text-align: center;
-            margin: 20px 0;
-            animation: shake 0.5s ease-in-out infinite;
-            display: inline-block;
-        }
-        @keyframes shake {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(5deg); }
-            75% { transform: rotate(-5deg); }
-            100% { transform: rotate(0deg); }
         }
         .referral-info {
             background-color: #F0E68C;
@@ -123,13 +136,30 @@
 <body>
     <div class="game-container">
         <h1>Saberboy Adventure</h1>
-        <div class="stats-bubble">
-            <p>Level: <span id="level">1</span> | Health: <span id="health">10</span>/<span id="max-health">10</span></p>
-            <p>Position: <span id="position">1</span> | Tokens: <span id="tokens">0</span></p>
-            <p>Dice Available: <span id="dice-available">3</span> | Next Dice in: <span id="next-dice-time">30:00</span></p>
+        <div class="stats-container">
+            <div class="stat-bubble">
+                <p>Level: <span id="level">1</span></p>
+            </div>
+            <div class="stat-bubble">
+                <p>Health: <span id="health">10</span>/<span id="max-health">10</span></p>
+            </div>
+            <div class="stat-bubble">
+                <p>Position: <span id="position">1</span></p>
+            </div>
+            <div class="stat-bubble">
+                <p>Tokens: <span id="tokens">0</span></p>
+            </div>
+            <div class="stat-bubble">
+                <p>Dice Available: <span id="dice-available">3</span></p>
+            </div>
+            <div class="stat-bubble">
+                <p>Next Dice in: <span id="next-dice-time">30:00</span></p>
+            </div>
         </div>
         <div class="board" id="board"></div>
-        <div id="dice-image">🎲</div>
+        <div id="dice-container">
+            <div id="dice-image">🎲</div>
+        </div>
         <button onclick="rollDice()">Roll Dice</button>
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (10 tokens)</button>
@@ -346,7 +376,7 @@
 
         function loadGame() {
             const savedState = localStorage.getItem('saberboyGameState');
-            const savedTasks = localStorage.getItem('saberboyTasks');
+            const savedTasks = localStorage.setItem('saberboyTasks');
             if (savedState) {
                 player = JSON.parse(savedState);
                 updatePlayerStats();

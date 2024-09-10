@@ -27,12 +27,20 @@
             color: #FF6347;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
+        .stats-bubble {
+            background-color: #87CEEB;
+            border-radius: 15px;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
         .board {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             margin: 20px 0;
-            background-color: #87CEEB;
+            background-color: #90EE90;
             border-radius: 15px;
             padding: 10px;
         }
@@ -47,7 +55,7 @@
             margin: 5px;
             font-size: 18px;
             font-weight: bold;
-            background-color: #90EE90;
+            background-color: #F0E68C;
             position: relative;
         }
         .player {
@@ -115,15 +123,17 @@
 <body>
     <div class="game-container">
         <h1>Saberboy Adventure</h1>
-        <p>Level: <span id="level">1</span> | Health: <span id="health">10</span>/<span id="max-health">10</span></p>
-        <p>Position: <span id="position">1</span> | Tokens: <span id="tokens">0</span></p>
-        <p>Dice Available: <span id="dice-available">3</span> | Next Dice in: <span id="next-dice-time">30:00</span></p>
+        <div class="stats-bubble">
+            <p>Level: <span id="level">1</span> | Health: <span id="health">10</span>/<span id="max-health">10</span></p>
+            <p>Position: <span id="position">1</span> | Tokens: <span id="tokens">0</span></p>
+            <p>Dice Available: <span id="dice-available">3</span> | Next Dice in: <span id="next-dice-time">30:00</span></p>
+        </div>
         <div class="board" id="board"></div>
         <div id="dice-image">🎲</div>
         <button onclick="rollDice()">Roll Dice</button>
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (10 tokens)</button>
-        <button onclick="showLeaderboard()">Show Leaderboard</button>
+        <button onclick="resetGame()">Reset Game</button>
         <p id="game-status"></p>
         <div class="referral-info">
             <h3>Invite Friends</h3>
@@ -155,7 +165,7 @@
             position: 0,
             tokens: 0,
             diceAvailable: 3,
-            nextDiceTime: Date.now(),
+            nextDiceTime: Date.now() + 30 * 60 * 1000,
             referralCode: '',
             referralCount: 0,
             diceCost: 10
@@ -257,6 +267,12 @@
 
         function updateTimers() {
             const now = Date.now();
+            if (now >= player.nextDiceTime) {
+                player.diceAvailable += 3;
+                player.nextDiceTime = now + 30 * 60 * 1000;
+                updatePlayerStats();
+                saveGame();
+            }
             const timeLeft = Math.max(0, player.nextDiceTime - now);
             const minutes = Math.floor(timeLeft / 60000);
             const seconds = Math.floor((timeLeft % 60000) / 1000);
@@ -341,6 +357,27 @@
             }
             updateReferralInfo();
             updateTasks();
+        }
+
+        function resetGame() {
+            player = {
+                level: 1,
+                health: 10,
+                maxHealth: 10,
+                position: 0,
+                tokens: 0,
+                diceAvailable: 3,
+                nextDiceTime: Date.now() + 30 * 60 * 1000,
+                referralCode: player.referralCode,
+                referralCount: player.referralCount,
+                diceCost: 10
+            };
+            tasks.forEach(task => task.completed = false);
+            createBoard();
+            updatePlayerStats();
+            updateTasks();
+            document.getElementById('game-status').textContent = "Game reset!";
+            saveGame();
         }
 
         // Initialize the game

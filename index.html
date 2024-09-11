@@ -164,6 +164,7 @@
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (10 tokens)</button>
         <button onclick="resetGame()">Reset Game</button>
+        <p>Dice Price Reset: <span id="dice-cost-reset-time"></span></p>
         <p id="game-status"></p>
         <div class="referral-info">
             <h3>Invite Friends</h3>
@@ -221,7 +222,7 @@
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = i + 1;
+                space.textContent = player.position + i + 1;
                 board.appendChild(space);
             }
             updatePlayerPosition();
@@ -229,9 +230,10 @@
 
         function updatePlayerPosition() {
             const spaces = document.querySelectorAll('.space');
-            spaces.forEach(space => {
+            spaces.forEach((space, index) => {
+                space.textContent = player.position + index + 1;
                 space.innerHTML = space.textContent;
-                if (parseInt(space.textContent) === (player.position % BOARD_SIZE) + 1) {
+                if (index === 0) {
                     const playerToken = document.createElement('div');
                     playerToken.className = 'player';
                     space.appendChild(playerToken);
@@ -247,7 +249,7 @@
                 player.tokens += roll;
                 player.diceAvailable--;
 
-                updatePlayerPosition();
+                createBoard();
                 updatePlayerStats();
                 document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position}. Gained ${roll} tokens.`;
 
@@ -267,8 +269,6 @@
 
         function levelUp() {
             player.level++;
-            player.position = 0;
-            createBoard();
             document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
         }
 
@@ -369,7 +369,7 @@
         function copyReferralLink() {
             const referralLink = document.getElementById('referral-link').textContent;
             navigator.clipboard.writeText(referralLink).then(() => {
-                alert('Referral link copied to clipboard!');
+alert('Referral link copied to clipboard!');
             }).catch(err => {
                 console.error('Failed to copy: ', err);
             });
@@ -422,7 +422,7 @@
             if (savedState) {
                 player = JSON.parse(savedState);
                 updatePlayerStats();
-                updatePlayerPosition();
+                createBoard();
             }
             if (savedTasks) {
                 tasks = JSON.parse(savedTasks);
@@ -454,8 +454,9 @@
         }
 
         // Initialize the game
-        createBoard();
         loadGame();
+        createBoard();
+        updatePlayerStats();
 
         // Start timer update interval
         setInterval(updateTimers, 1000);
@@ -471,7 +472,7 @@
                 // player = data.gameState.player;
                 // tasks = data.gameState.tasks;
                 // updatePlayerStats();
-                // updatePlayerPosition();
+                // createBoard();
                 // updateReferralInfo();
                 // updateTasks();
             }

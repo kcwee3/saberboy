@@ -387,7 +387,8 @@
                     taskElement.innerHTML = `
                         <p>${task.description} - Reward: ${task.reward} tokens</p>
                         <button onclick="completeTask(${task.id})">Complete</button>
-                    `;                }
+                    `;
+                }
                 tasksContainer.appendChild(taskElement);
             });
         }

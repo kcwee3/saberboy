@@ -218,10 +218,11 @@
         function createBoard() {
             const board = document.getElementById('board');
             board.innerHTML = '';
+            const startNumber = Math.floor(player.position / BOARD_SIZE) * BOARD_SIZE + 1;
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = i + 1;
+                space.textContent = startNumber + i;
                 board.appendChild(space);
             }
             updatePlayerPosition();
@@ -231,7 +232,7 @@
             const spaces = document.querySelectorAll('.space');
             spaces.forEach((space, index) => {
                 space.innerHTML = space.textContent;
-                if (index === player.position) {
+                if (parseInt(space.textContent) === player.position + 1) {
                     const playerToken = document.createElement('div');
                     playerToken.className = 'player';
                     space.appendChild(playerToken);
@@ -247,16 +248,16 @@
                 player.tokens += roll;
                 player.diceAvailable--;
 
-                if (player.position >= BOARD_SIZE) {
-                    levelUp();
-                } else {
-                    createBoard();
-                    updatePlayerStats();
-                    document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
-                }
+                createBoard();
+                updatePlayerStats();
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
 
                 if ((player.position + 1) % 7 === 0) {
                     initiateAttack();
+                }
+
+                if (player.position >= BOARD_SIZE * player.level) {
+                    levelUp();
                 }
 
                 saveGame();
@@ -267,10 +268,7 @@
 
         function levelUp() {
             player.level++;
-            player.position = 0;
-            createBoard();
-            updatePlayerStats();
-            document.getElementById('game-status').textContent = `Congratulations! You've reached Level ${player.level}! Starting back at space 1.`;
+            document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
         }
 
         function initiateAttack() {
@@ -372,8 +370,8 @@
             document.getElementById('referral-count').textContent = player.referralCount;
         }
 
-    function generateReferralCode() {
-        return Math.random().toString(36).substring(2, 8).toUpperCase();
+        function generateReferralCode() {
+return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
     function copyReferralLink() {

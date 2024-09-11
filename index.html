@@ -163,7 +163,6 @@
         <button onclick="rollDice()">Roll Dice</button>
         <button onclick="buyDice()">Buy 10 Dice (<span id="dice-cost">10</span> tokens)</button>
         <button onclick="upgradeHealth()">Upgrade Health (10 tokens)</button>
-        <button onclick="resetGame()">Reset Game</button>
         <p>Dice Price Reset: <span id="dice-cost-reset-time"></span></p>
         <p id="game-status"></p>
         <div class="referral-info">
@@ -219,10 +218,11 @@
         function createBoard() {
             const board = document.getElementById('board');
             board.innerHTML = '';
+            const startNumber = Math.floor(player.position / BOARD_SIZE) * BOARD_SIZE + 1;
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = player.position + i + 1;
+                space.textContent = startNumber + i;
                 board.appendChild(space);
             }
             updatePlayerPosition();
@@ -231,9 +231,8 @@
         function updatePlayerPosition() {
             const spaces = document.querySelectorAll('.space');
             spaces.forEach((space, index) => {
-                space.textContent = player.position + index + 1;
                 space.innerHTML = space.textContent;
-                if (index === 0) {
+                if (parseInt(space.textContent) === player.position + 1) {
                     const playerToken = document.createElement('div');
                     playerToken.className = 'player';
                     space.appendChild(playerToken);
@@ -251,9 +250,9 @@
 
                 createBoard();
                 updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position}. Gained ${roll} tokens.`;
+                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
 
-                if (player.position % 7 === 0) {
+                if ((player.position + 1) % 7 === 0) {
                     initiateAttack();
                 }
 
@@ -276,12 +275,21 @@
             const damage = Math.floor(Math.random() * 5) + 1;
             player.health = Math.max(0, player.health - damage);
             if (player.health === 0) {
-                resetGame();
+                gameOver();
                 document.getElementById('game-status').textContent = `You were attacked and lost all your health. Game over!`;
             } else {
                 document.getElementById('game-status').textContent += ` You were attacked and lost ${damage} health!`;
             }
             updatePlayerStats();
+        }
+
+        function gameOver() {
+            player.position = 0;
+            player.health = player.maxHealth;
+            player.tokens = Math.floor(player.tokens / 2);
+            createBoard();
+            updatePlayerStats();
+            saveGame();
         }
 
         function buyDice() {
@@ -314,7 +322,7 @@
             document.getElementById('level').textContent = player.level;
             document.getElementById('health').textContent = player.health;
             document.getElementById('max-health').textContent = player.maxHealth;
-            document.getElementById('position').textContent = player.position;
+            document.getElementById('position').textContent = player.position + 1;
             document.getElementById('tokens').textContent = player.tokens;
             document.getElementById('dice-available').textContent = player.diceAvailable;
             document.getElementById('dice-cost').textContent = player.diceCost;
@@ -366,10 +374,10 @@
             return Math.random().toString(36).substring(2, 8).toUpperCase();
         }
 
-        function copyReferralLink() {
+function copyReferralLink() {
             const referralLink = document.getElementById('referral-link').textContent;
             navigator.clipboard.writeText(referralLink).then(() => {
-alert('Referral link copied to clipboard!');
+                alert('Referral link copied to clipboard!');
             }).catch(err => {
                 console.error('Failed to copy: ', err);
             });
@@ -429,28 +437,6 @@ alert('Referral link copied to clipboard!');
             }
             updateReferralInfo();
             updateTasks();
-        }
-
-        function resetGame() {
-            player = {
-                level: 1,
-                health: 10,
-                maxHealth: 10,
-                position: 0,
-                tokens: 0,
-                diceAvailable: 3,
-                nextDiceTime: Date.now() + 30 * 60 * 1000,
-                referralCode: player.referralCode,
-                referralCount: player.referralCount,
-                diceCost: 10,
-                tokenPriceResetTime: getNextSingaporeReset()
-            };
-            tasks.forEach(task => task.completed = false);
-            createBoard();
-            updatePlayerStats();
-            updateTasks();
-            document.getElementById('game-status').textContent = "Game reset!";
-            saveGame();
         }
 
         // Initialize the game

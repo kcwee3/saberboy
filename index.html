@@ -218,11 +218,10 @@
         function createBoard() {
             const board = document.getElementById('board');
             board.innerHTML = '';
-            const startNumber = Math.floor(player.position / BOARD_SIZE) * BOARD_SIZE + 1;
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const space = document.createElement('div');
                 space.className = 'space';
-                space.textContent = startNumber + i;
+                space.textContent = i + 1;
                 board.appendChild(space);
             }
             updatePlayerPosition();
@@ -232,7 +231,7 @@
             const spaces = document.querySelectorAll('.space');
             spaces.forEach((space, index) => {
                 space.innerHTML = space.textContent;
-                if (parseInt(space.textContent) === player.position + 1) {
+                if (index === player.position) {
                     const playerToken = document.createElement('div');
                     playerToken.className = 'player';
                     space.appendChild(playerToken);
@@ -248,16 +247,16 @@
                 player.tokens += roll;
                 player.diceAvailable--;
 
-                createBoard();
-                updatePlayerStats();
-                document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+                if (player.position >= BOARD_SIZE) {
+                    levelUp();
+                } else {
+                    createBoard();
+                    updatePlayerStats();
+                    document.getElementById('game-status').textContent = `You rolled a ${roll}. Moved to space ${player.position + 1}. Gained ${roll} tokens.`;
+                }
 
                 if ((player.position + 1) % 7 === 0) {
                     initiateAttack();
-                }
-
-                if (player.position >= BOARD_SIZE * player.level) {
-                    levelUp();
                 }
 
                 saveGame();
@@ -268,7 +267,10 @@
 
         function levelUp() {
             player.level++;
-            document.getElementById('game-status').textContent += ` Congratulations! You've reached Level ${player.level}!`;
+            player.position = 0;
+            createBoard();
+            updatePlayerStats();
+            document.getElementById('game-status').textContent = `Congratulations! You've reached Level ${player.level}! Starting back at space 1.`;
         }
 
         function initiateAttack() {
@@ -370,99 +372,99 @@
             document.getElementById('referral-count').textContent = player.referralCount;
         }
 
-        function generateReferralCode() {
-            return Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
+    function generateReferralCode() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
 
-function copyReferralLink() {
-            const referralLink = document.getElementById('referral-link').textContent;
-            navigator.clipboard.writeText(referralLink).then(() => {
-                alert('Referral link copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-        }
-
-        function updateTasks() {
-            const tasksContainer = document.getElementById('tasks-container');
-            tasksContainer.innerHTML = '<h3>Tasks</h3>';
-            tasks.forEach(task => {
-                const taskElement = document.createElement('div');
-                taskElement.className = 'task';
-                if (task.completed) {
-                    taskElement.innerHTML = `<p>${task.description} - Completed</p>`;
-                } else {
-                    taskElement.innerHTML = `
-                        <p>${task.description} - Reward: ${task.reward} tokens</p>
-                        <button onclick="completeTask(${task.id})">Complete</button>
-                    `;
-                }
-                tasksContainer.appendChild(taskElement);
-            });
-        }
-
-        function completeTask(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            if (task && !task.completed) {
-                window.open(task.link, '_blank');
-                task.completed = true;
-                player.tokens += task.reward;
-                updatePlayerStats();
-                updateTasks();
-                document.getElementById('game-status').textContent = `Completed task. Gained ${task.reward} tokens.`;
-                saveGame();
-            }
-        }
-
-        function saveGame() {
-            localStorage.setItem('saberboyGameState', JSON.stringify(player));
-            localStorage.setItem('saberboyTasks', JSON.stringify(tasks));
-            tg.sendData(JSON.stringify({
-                action: "updateGameState",
-                player: player,
-                tasks: tasks
-            }));
-        }
-
-        function loadGame() {
-            const savedState = localStorage.getItem('saberboyGameState');
-            const savedTasks = localStorage.getItem('saberboyTasks');
-            if (savedState) {
-                player = JSON.parse(savedState);
-                updatePlayerStats();
-                createBoard();
-            }
-            if (savedTasks) {
-                tasks = JSON.parse(savedTasks);
-            }
-            updateReferralInfo();
-            updateTasks();
-        }
-
-        // Initialize the game
-        loadGame();
-        createBoard();
-        updatePlayerStats();
-
-        // Start timer update interval
-        setInterval(updateTimers, 1000);
-
-        // Request initial game state from the bot
-        tg.sendData(JSON.stringify({ action: "getGameState" }));
-
-        // Listen for messages from the bot
-        tg.onEvent('message', function(event) {
-            const data = JSON.parse(event.data);
-            if (data.action === "loadGameState") {
-                // Uncomment the following lines if you want to use server-side game state
-                // player = data.gameState.player;
-                // tasks = data.gameState.tasks;
-                // updatePlayerStats();
-                // createBoard();
-                // updateReferralInfo();
-                // updateTasks();
-            }
+    function copyReferralLink() {
+        const referralLink = document.getElementById('referral-link').textContent;
+        navigator.clipboard.writeText(referralLink).then(() => {
+            alert('Referral link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
         });
-    </script>
+    }
+
+    function updateTasks() {
+        const tasksContainer = document.getElementById('tasks-container');
+        tasksContainer.innerHTML = '<h3>Tasks</h3>';
+        tasks.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            if (task.completed) {
+                taskElement.innerHTML = `<p>${task.description} - Completed</p>`;
+            } else {
+                taskElement.innerHTML = `
+                    <p>${task.description} - Reward: ${task.reward} tokens</p>
+                    <button onclick="completeTask(${task.id})">Complete</button>
+                `;
+            }
+            tasksContainer.appendChild(taskElement);
+        });
+    }
+
+    function completeTask(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && !task.completed) {
+            window.open(task.link, '_blank');
+            task.completed = true;
+            player.tokens += task.reward;
+            updatePlayerStats();
+            updateTasks();
+            document.getElementById('game-status').textContent = `Completed task. Gained ${task.reward} tokens.`;
+            saveGame();
+        }
+    }
+
+    function saveGame() {
+        localStorage.setItem('saberboyGameState', JSON.stringify(player));
+        localStorage.setItem('saberboyTasks', JSON.stringify(tasks));
+        tg.sendData(JSON.stringify({
+            action: "updateGameState",
+            player: player,
+            tasks: tasks
+        }));
+    }
+
+    function loadGame() {
+        const savedState = localStorage.getItem('saberboyGameState');
+        const savedTasks = localStorage.getItem('saberboyTasks');
+        if (savedState) {
+            player = JSON.parse(savedState);
+            updatePlayerStats();
+            createBoard();
+        }
+        if (savedTasks) {
+            tasks = JSON.parse(savedTasks);
+        }
+        updateReferralInfo();
+        updateTasks();
+    }
+
+    // Initialize the game
+    loadGame();
+    createBoard();
+    updatePlayerStats();
+
+    // Start timer update interval
+    setInterval(updateTimers, 1000);
+
+    // Request initial game state from the bot
+    tg.sendData(JSON.stringify({ action: "getGameState" }));
+
+    // Listen for messages from the bot
+    tg.onEvent('message', function(event) {
+        const data = JSON.parse(event.data);
+        if (data.action === "loadGameState") {
+            // Uncomment the following lines if you want to use server-side game state
+            // player = data.gameState.player;
+            // tasks = data.gameState.tasks;
+            // updatePlayerStats();
+            // createBoard();
+            // updateReferralInfo();
+            // updateTasks();
+        }
+    });
+</script>
 </body>
 </html>
